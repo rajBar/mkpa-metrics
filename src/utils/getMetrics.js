@@ -1,41 +1,31 @@
-import csv from 'fast-csv';
-import _ from 'lodash';
+const _ = require("lodash");
 
-const headers = ["StartTime","n/a","ChildsFirstName","ChildsLastName","Phone","Email","Type","Calendar","AppointmentPrice","Paid","AmountPaidOnline","CertificateCode","Notes","DateScheduled","Label","ScheduledBy","Postcode","Gender","BirthYear","Ethnicity","SpecialEducationNeedsOrDisability","SpecialEducationCondition","AppointmentId"];
-
-const metrics = {
-    date: "",
+const metricTemplate = {
     location: "",
-    // {SEN?: ??},
-    totalAttended: 0,
-    totalBoys: 0,
-    totalGirls: 0,
-    ageGroups: {
-        totalZeroToFive: 0,
-        totalSixToEight: 0,
-        totalNineToEleven: 0,
-        totalTwelveToFourteen: 0,
-        totalOverFourteen: 0,
-        empty: 0
-    },
-    ethnicities: [],
-    postcodes: []
+    metrics: {
+        SEN: [],
+        totalAttended: 0,
+        totalBoys: 0,
+        totalGirls: 0,
+        ageGroups: {
+            totalZeroToFive: 0,
+            totalSixToEight: 0,
+            totalNineToEleven: 0,
+            totalTwelveToFourteen: 0,
+            totalOverFourteen: 0,
+            empty: 0
+        },
+        ethnicities: [],
+        postcodes: []
+    }
 };
 
+const allMetrics = [];
 
-const getDataFromCsv = (csvFile) => {
-    return new Promise((resolve, reject) => {
-        const csvData = [];
-        csv.parseString(csvFile, {headers: headers, renameHeaders: true, ignoreEmpty: true})
-        // csv.parseFile('./charityFiles/finalcsv.csv', {headers: headers, renameHeaders: true, ignoreEmpty: true})
-            .on("data", (data) => {
-                csvData.push(data);
-            })
-            .on("end", () => {
-                resolve(csvData);
-            });
-    });
-}
+let metrics;
+
+let currentMetricLocationIndex;
+
 
 const incrementGender = gender => {
     const totalBoys = metrics.totalBoys;
@@ -54,9 +44,6 @@ const incrementAgeGroup = age => {
     const totalTwelveToFourteen = metrics.ageGroups.totalTwelveToFourteen;
     const totalOverFourteen = metrics.ageGroups.totalOverFourteen;
     const empty = metrics.ageGroups.empty;
-
-    console.log(age);
-    console.log(typeof age);
 
     switch(true) {
         case (age < -1):
@@ -83,8 +70,8 @@ const incrementAgeGroup = age => {
 }
 
 const incrementEthnicities = ethnicity => {
-    const ethnicities = metrics.ethnicities;
-    const index = _.findIndex(ethnicities, e => e.ethnicity = ethnicity);
+    const ethnicities = [...metrics.ethnicities];
+    const index = _.findIndex(ethnicities, e => e.ethnicity === ethnicity);
 
     if (index === -1) {
         ethnicities.push({ethnicity, count: 1})
@@ -93,12 +80,12 @@ const incrementEthnicities = ethnicity => {
         ethnicities[index].count = count + 1;
     }
 
-    metrics.ethnicities = ethnicities;
+    metrics.ethnicities = [...ethnicities];
 }
 
 const incrementPostcode = postcode => {
     const postcodes = metrics.postcodes;
-    const index = _.findIndex(postcodes, e => e.postcode = postcode);
+    const index = _.findIndex(postcodes, e => e.postcode === postcode);
 
     if (index === -1) {
         postcodes.push({postcode, count: 1})
@@ -110,47 +97,75 @@ const incrementPostcode = postcode => {
     metrics.postcodes = postcodes;
 }
 
-const generateMetrics = async dataRow => {
-    const gender = dataRow.Gender;
-    gender.toString().toLowerCase() === "male" ? incrementGender("m") : incrementGender("f");
+const incrementSEN = condition => {
+    const conditions = metrics.SEN;
+    const index = _.findIndex(conditions, e => e.condition === condition);
 
-    const date = new Date();
-    console.log('================');
-    console.log(dataRow.BirthYear);
-    console.log(typeof dataRow.BirthYear);
-    console.log('----')
-    const birthYear = dataRow.BirthYear.replace(/\s+/g, '') === "" ? 3000 : dataRow.BirthYear;
-    console.log(birthYear);
-    console.log(typeof birthYear);
-    console.log('----')
-    const age = date.getFullYear() - birthYear;
-    console.log(age);
-    incrementAgeGroup(age);
-    console.log('================');
+    if (index === -1) {
+        conditions.push({condition, count: 1})
+    } else {
+        const count = conditions[index].count;
+        conditions[index].count = count + 1;
+    }
 
-    const ethnicity = dataRow.Ethnicity.replace(/\s+/g, '') === "" ? "empty" : dataRow.Ethnicity.replace(/\s+/g, '');
-    incrementEthnicities(ethnicity);
-
-    const postcode = dataRow.Postcode.replace(/\s+/g, '') === "" ? "empty": dataRow.Postcode.replace(/\s+/g, '');
-    incrementPostcode(postcode);
+    metrics.SEN = conditions;
 }
 
-export const metricCalulator = async (csvFile) => {
-    const allData = await getDataFromCsv(csvFile);
-    metrics.date = allData[0].StartTime;
-    metrics.location = allData[0].Type;
-    metrics.totalAttended = allData.length;
+const getMetricsForLocation = async location => {
+    const index = _.findIndex(allMetrics, e => e.location === location);
+
+    if (index === - 1) {
+        const newLMetricLocation = {...metricTemplate};
+        newLMetricLocation.location = location;
+        currentMetricLocationIndex = allMetrics.length;
+        allMetrics.push(newLMetricLocation);
+        metrics = {...allMetrics[currentMetricLocationIndex].metrics};
+        metrics.totalAttended = 1;
+    } else {
+        currentMetricLocationIndex = index;
+        metrics = {...allMetrics[currentMetricLocationIndex].metrics};
+        metrics.totalAttended = metrics.totalAttended + 1;
+    }
+
+    return 0;
+}
+
+const generateMetrics = async dataRow => {
+    const blah = await getMetricsForLocation(dataRow.type);
+
+    const gender = dataRow.maleorfemale;
+    gender.toString().toLowerCase() === "male" ? await incrementGender("m") : await incrementGender("f");
+
+    const date = new Date();
+    const birthYear = dataRow.yearofbirth.replace(/\s+/g, '') === "" ? 3000 : dataRow.BirthYear;
+    const age = date.getFullYear() - birthYear;
+    await incrementAgeGroup(age);
+
+    const ethnicity = dataRow.pleasechooseappropiateethnicityofyourchild.replace(/\s+/g, '') === "" ? "empty" : dataRow.pleasechooseappropiateethnicityofyourchild.replace(/\s+/g, '');
+    await incrementEthnicities(ethnicity);
+
+    const postcode = dataRow.postcode.replace(/\s+/g, '') === "" ? "empty": dataRow.postcode.replace(/\s+/g, '').slice(0, -3).toLowerCase();
+    await incrementPostcode(postcode);
+
+    if ((dataRow.doesyourchildhaveanyspecialeducationalneeds.toLowerCase().replace(/\s/g, "") === "yes") && dataRow.ifyespleasesignifybelow) await incrementSEN(dataRow.ifyespleasesignifybelow);
+
+    allMetrics[currentMetricLocationIndex].metrics = {...metrics};
+}
+
+export const metricCalulator = async (allData) => {
 
     for (const row of allData) {
         await generateMetrics(row);
     }
 
-    console.log(JSON.stringify(metrics));
+    console.log(JSON.stringify(allMetrics));
 
     console.log('===========================');
     console.log('===========================');
     console.log('===========================');
     console.log('===========================');
 
-    console.log(metrics);
+    console.log(allMetrics);
+
+    return allMetrics
 }
