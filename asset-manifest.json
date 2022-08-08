@@ -1,8 +1,8 @@
 {
   "files": {
     "main.css": "/mkpa-metrics/static/css/main.d9da487a.chunk.css",
-    "main.js": "/mkpa-metrics/static/js/main.5db1b03b.chunk.js",
-    "main.js.map": "/mkpa-metrics/static/js/main.5db1b03b.chunk.js.map",
+    "main.js": "/mkpa-metrics/static/js/main.f0c67b03.chunk.js",
+    "main.js.map": "/mkpa-metrics/static/js/main.f0c67b03.chunk.js.map",
     "runtime-main.js": "/mkpa-metrics/static/js/runtime-main.f8c07767.js",
     "runtime-main.js.map": "/mkpa-metrics/static/js/runtime-main.f8c07767.js.map",
     "static/js/2.3e5a7d78.chunk.js": "/mkpa-metrics/static/js/2.3e5a7d78.chunk.js",
@@ -17,6 +17,6 @@
     "static/js/runtime-main.f8c07767.js",
     "static/js/2.3e5a7d78.chunk.js",
     "static/css/main.d9da487a.chunk.css",
-    "static/js/main.5db1b03b.chunk.js"
+    "static/js/main.f0c67b03.chunk.js"
   ]
 }
