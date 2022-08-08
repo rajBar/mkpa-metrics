@@ -155,7 +155,9 @@ const generateMetrics = async dataRow => {
 export const metricCalulator = async (allData) => {
 
     for (const row of allData) {
-        await generateMetrics(row);
+        if (row.label.replace(/\s+/g, '').toLowerCase() === "checkedin") {
+            await generateMetrics(row);
+        }
     }
 
     console.log(JSON.stringify(allMetrics));
